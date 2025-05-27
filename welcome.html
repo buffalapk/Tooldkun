@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Noto Sans JP', sans-serif;
+      background: linear-gradient(135deg, #2c3e50, #4ca1af);
+      color: #ffffff;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 左上のテキスト */
+    #menuText {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      font-size: 1rem;
+      color: #eeeeee;
+      user-select: none;
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    /* 中央の挨拶 */
+    #greeting {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      font-weight: 600;
+      white-space: nowrap;
+      animation: fadeIn 1.5s ease-in-out forwards;
+      opacity: 0;
+      max-width: 90vw;
+      text-align: center;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -55%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    /* モバイルでの文字サイズ調整 */
+    @media (max-width: 600px) {
+      #greeting {
+        font-size: 2rem;
+      }
+      #menuText {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="menuText">左上のメニューを開いて使用したいツールを選択してください。</div>
+  <div id="greeting">...</div>
+
+  <script>
+    function getGreeting() {
+      const hour = new Date().getHours();
+      if (hour < 12) return "おはようございます";
+      if (hour < 18) return "こんにちは";
+      return "こんばんわ";
+    }
+
+    window.onload = () => {
+      const greeting = document.getElementById('greeting');
+      greeting.textContent = getGreeting();
+      greeting.style.opacity = '1';  // アニメーション用
+    };
+  </script>
+</body>
+</html>
