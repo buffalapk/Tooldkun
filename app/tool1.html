@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>写し間違い防止ツール</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Noto+Serif+JP&family=Kosugi&family=Kosugi+Maru&family=M+PLUS+1p&family=M+PLUS+Rounded+1c&family=Sawarabi+Mincho&family=Sawarabi+Gothic&family=Shippori+Mincho+B1&family=Yuji+Syuku&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      background-color: #f0f0f0;
+    }
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 10px 20px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      align-items: center;
+      z-index: 10;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+      overflow: hidden;
+    }
+    textarea {
+      width: 50%;
+      resize: none;
+      border: none;
+      padding: 20px;
+      font-size: 16px;
+      outline: none;
+      height: 100%;
+      font-family: inherit;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+    #highlightedText {
+      width: 50%;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #ffffff;
+      font-size: 16px;
+      font-family: inherit;
+      border-left: 1px solid #ccc;
+      height: 100%;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+    }
+    .resizer {
+      width: 5px;
+      background: #ccc;
+      cursor: ew-resize;
+      height: 100%;
+    }
+    .highlight {
+      background-color: #fff176;
+      border-radius: 4px;
+      display: inline;
+    }
+    .vertical {
+      writing-mode: vertical-rl;
+      white-space: normal;
+    }
+    .range-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    /* Material風リップルボタン */
+    .ripple-button {
+      position: relative;
+      overflow: hidden;
+      background-color: #0078d7;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.3s ease;
+    }
+    .ripple-button:hover {
+      background-color: #005fa3;
+    }
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      transform: scale(0);
+      animation: ripple-effect 600ms linear;
+      background-color: rgba(255, 255, 255, 0.7);
+      pointer-events: none;
+      z-index: 10;
+    }
+    @keyframes ripple-effect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* Material風カスタムチェックボックス */
+    .custom-checkbox {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      padding-left: 28px;
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+    .custom-checkbox input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+    .checkmark {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 18px;
+      width: 18px;
+      background-color: #fff;
+      border: 2px solid #0078d7;
+      border-radius: 50%;
+      box-sizing: border-box;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+      overflow: hidden;
+    }
+    .custom-checkbox input[type="checkbox"]:checked ~ .checkmark {
+      background-color: #0078d7;
+      border-color: #0078d7;
+    }
+    /* チェックの中身 (白丸) */
+    .checkmark::after {
+      content: "";
+      position: absolute;
+      display: block;
+      left: 50%;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: white;
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform 0.3s ease;
+    }
+    .custom-checkbox input[type="checkbox"]:checked ~ .checkmark::after {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* チェックボックスのリップル */
+    .checkmark.ripple-container {
+      overflow: visible;
+    }
+    .checkmark.ripple-container .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background-color: rgba(0, 120, 215, 0.4);
+      animation: ripple-effect-checkbox 600ms linear;
+      pointer-events: none;
+      z-index: 5;
+    }
+    @keyframes ripple-effect-checkbox {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      .main {
+        flex-direction: column;
+      }
+      #highlightedText, textarea {
+        width: 100% !important;
+        height: 50%;
+      }
+      .resizer {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <label>
+      フォント：
+      <select id="fontSelector">
+        <option value="Noto Sans JP">Noto Sans JP</option>
+        <option value="Noto Serif JP">Noto Serif JP</option>
+        <option value="Kosugi">Kosugi</option>
+        <option value="Kosugi Maru">Kosugi Maru</option>
+        <option value="M PLUS 1p">M PLUS 1p</option>
+        <option value="M PLUS Rounded 1c">M PLUS Rounded 1c</option>
+        <option value="Sawarabi Mincho">Sawarabi Mincho</option>
+        <option value="Sawarabi Gothic">Sawarabi Gothic</option>
+        <option value="Shippori Mincho B1">Shippori Mincho B1</option>
+        <option value="Yuji Syuku">Yuji Syuku</option>
+      </select>
+    </label>
+    <label>
+      紙サイズ：
+      <select id="paperSize">
+        <option value="A4">A4</option>
+        <option value="B5">B5</option>
+      </select>
+    </label>
+    <label class="range-label">
+      フォントサイズ：
+      <input type="range" id="fontSizeSlider" min="10" max="32" value="16" />
+      <span id="fontSizeValue">16px</span>
+    </label>
+    <label class="custom-checkbox" for="toggleVertical">
+      <input type="checkbox" id="toggleVertical" />
+      <span class="checkmark ripple-container"></span>
+      縦書き
+    </label>
+    <div class="controls">
+      <button id="upBtn" class="ripple-button">前の行</button>
+      <button id="downBtn" class="ripple-button">次の行</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <textarea id="inputArea" placeholder="ここにテキストを入力してください"></textarea>
+    <div class="resizer" id="resizer"></div>
+    <div id="highlightedText"></div>
+  </div>
+
+  <script>
+    const inputArea = document.getElementById('inputArea');
+    const highlightedText = document.getElementById('highlightedText');
+    const upBtn = document.getElementById('upBtn');
+    const downBtn = document.getElementById('downBtn');
+    const toggleVertical = document.getElementById('toggleVertical');
+    const fontSizeSlider = document.getElementById('fontSizeSlider');
+    const fontSizeValue = document.getElementById('fontSizeValue');
+    const fontSelector = document.getElementById('fontSelector');
+    const resizer = document.getElementById('resizer');
+
+    let lines = [];
+    let highlightIndex = 0;
+    let isResizing = false;
+
+    // 行を更新してハイライト描画
+    function updateLines() {
+      lines = inputArea.value.split('\n');
+      highlightIndex = Math.min(highlightIndex, lines.length - 1);
+      if (highlightIndex < 0) highlightIndex = 0;
+      renderHighlightedText();
+    }
+
+    function renderHighlightedText() {
+      highlightedText.innerHTML = lines.map((line, idx) => {
+        const escaped = escapeHtml(line);
+        return idx === highlightIndex
+          ? `<span class="highlight">${escaped}</span>\n`
+          : `${escaped}\n`;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, '&amp;')
+                 .replace(/</g, '&lt;')
+                 .replace(/>/g, '&gt;')
+                 .replace(/"/g, '&quot;')
+                 .replace(/'/g, '&#039;');
+    }
+
+    function updateFontSize() {
+      const size = fontSizeSlider.value;
+      highlightedText.style.fontSize = `${size}px`;
+      inputArea.style.fontSize = `${size}px`;
+      fontSizeValue.textContent = `${size}px`;
+    }
+
+    function updateFontFamily() {
+      const selectedFont = fontSelector.value;
+      highlightedText.style.fontFamily = `'${selectedFont}', sans-serif`;
+      inputArea.style.fontFamily = `'${selectedFont}', sans-serif`;
+    }
+
+    function updateVerticalMode() {
+      const isVertical = toggleVertical.checked;
+      highlightedText.classList.toggle('vertical', isVertical);
+    }
+
+    upBtn.addEventListener('click', (e) => {
+      createRipple(e);
+      if (highlightIndex > 0) {
+        highlightIndex--;
+        renderHighlightedText();
+      }
+    });
+
+    downBtn.addEventListener('click', (e) => {
+      createRipple(e);
+      if (highlightIndex < lines.length - 1) {
+        highlightIndex++;
+        renderHighlightedText();
+      }
+    });
+
+    inputArea.addEventListener('input', updateLines);
+    toggleVertical.addEventListener('change', updateVerticalMode);
+    fontSizeSlider.addEventListener('input', updateFontSize);
+    fontSelector.addEventListener('change', updateFontFamily);
+
+    // リサイズ機能
+    const container = document.querySelector('.main');
+    resizer.addEventListener('mousedown', () => {
+      isResizing = true;
+      document.body.style.cursor = 'ew-resize';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const containerLeft = container.getBoundingClientRect().left;
+      const pointerX = e.clientX - containerLeft;
+      const width = container.offsetWidth;
+      const leftPercent = (pointerX / width) * 100;
+      const rightPercent = 100 - leftPercent;
+
+      inputArea.style.width = `${leftPercent}%`;
+      highlightedText.style.width = `${rightPercent}%`;
+    });
+
+    window.addEventListener('mouseup', () => {
+      isResizing = false;
+      document.body.style.cursor = 'default';
+    });
+
+    // リップルエフェクト作成関数（ボタン用）
+    function createRipple(event) {
+      const button = event.currentTarget;
+      const circle = document.createElement('span');
+      circle.classList.add('ripple');
+
+      const rect = button.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      circle.style.width = circle.style.height = size + 'px';
+
+      // クリック位置を計算
+      const x = event.clientX - rect.left - size / 2;
+      const y = event.clientY - rect.top - size / 2;
+      circle.style.left = x + 'px';
+      circle.style.top = y + 'px';
+
+      button.appendChild(circle);
+
+      circle.addEventListener('animationend', () => {
+        circle.remove();
+      });
+    }
+
+    // チェックボックスのリップルエフェクト
+    const customCheckboxes = document.querySelectorAll('.custom-checkbox input[type="checkbox"]');
+    customCheckboxes.forEach(chk => {
+      chk.addEventListener('click', (e) => {
+        const checkmark = e.target.nextElementSibling;
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        const rect = checkmark.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (rect.width / 2 - size / 2) + 'px';
+        ripple.style.top = (rect.height / 2 - size / 2) + 'px';
+        checkmark.appendChild(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove());
+      });
+    });
+
+    // 初期化
+    updateLines();
+    updateFontSize();
+    updateFontFamily();
+    updateVerticalMode();
+  </script>
+</body>
+</html>
