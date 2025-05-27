@@ -4,6 +4,38 @@
   <meta charset="UTF-8" />
   <title>写し間違い防止ツール</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Noto+Serif+JP&family=Kosugi&family=Kosugi+Maru&family=M+PLUS+1p&family=M+PLUS+Rounded+1c&family=Sawarabi+Mincho&family=Sawarabi+Gothic&family=Shippori+Mincho+B1&family=Yuji+Syuku&display=swap" rel="stylesheet">
+  
+  <script>
+    // モバイル判定
+    function isMobile() {
+      return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    }
+
+    if (isMobile()) {
+      // モバイルなら警告を表示し、以降の読み込みを停止
+      document.write(`
+        <style>
+          body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+          }
+        </style>
+        <div>
+          <h2>モバイルでは使用できません</h2>
+          <p>このツールはPC環境でご利用ください。</p>
+        </div>
+      `);
+    }
+  </script>
+
   <style>
     html, body {
       margin: 0;
@@ -84,7 +116,6 @@
       margin-left: auto;
     }
 
-    /* Material風リップルボタン */
     .ripple-button {
       position: relative;
       overflow: hidden;
@@ -118,7 +149,6 @@
       }
     }
 
-    /* Material風カスタムチェックボックス */
     .custom-checkbox {
       position: relative;
       display: inline-flex;
@@ -155,7 +185,6 @@
       background-color: #0078d7;
       border-color: #0078d7;
     }
-    /* チェックの中身 (白丸) */
     .checkmark::after {
       content: "";
       position: absolute;
@@ -172,8 +201,6 @@
     .custom-checkbox input[type="checkbox"]:checked ~ .checkmark::after {
       transform: translate(-50%, -50%) scale(1);
     }
-
-    /* チェックボックスのリップル */
     .checkmark.ripple-container {
       overflow: visible;
     }
@@ -191,8 +218,6 @@
         opacity: 0;
       }
     }
-
-    /* レスポンシブ */
     @media (max-width: 768px) {
       .main {
         flex-direction: column;
@@ -268,7 +293,6 @@
     let highlightIndex = 0;
     let isResizing = false;
 
-    // 行を更新してハイライト描画
     function updateLines() {
       lines = inputArea.value.split('\n');
       highlightIndex = Math.min(highlightIndex, lines.length - 1);
@@ -332,7 +356,6 @@
     fontSizeSlider.addEventListener('input', updateFontSize);
     fontSelector.addEventListener('change', updateFontFamily);
 
-    // リサイズ機能
     const container = document.querySelector('.main');
     resizer.addEventListener('mousedown', () => {
       isResizing = true;
@@ -356,7 +379,6 @@
       document.body.style.cursor = 'default';
     });
 
-    // リップルエフェクト作成関数（ボタン用）
     function createRipple(event) {
       const button = event.currentTarget;
       const circle = document.createElement('span');
@@ -366,7 +388,6 @@
       const size = Math.max(rect.width, rect.height);
       circle.style.width = circle.style.height = size + 'px';
 
-      // クリック位置を計算
       const x = event.clientX - rect.left - size / 2;
       const y = event.clientY - rect.top - size / 2;
       circle.style.left = x + 'px';
@@ -379,7 +400,6 @@
       });
     }
 
-    // チェックボックスのリップルエフェクト
     const customCheckboxes = document.querySelectorAll('.custom-checkbox input[type="checkbox"]');
     customCheckboxes.forEach(chk => {
       chk.addEventListener('click', (e) => {
