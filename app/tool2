@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Base64変換ツール</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 300px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      background-color: #f9f9f9;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .ripple-button {
+      position: relative;
+      overflow: hidden;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      background-color: #6200ea;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .ripple-button:active::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      animation: ripple 0.6s linear;
+      transform: scale(0);
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    @keyframes ripple {
+      to {
+        transform: scale(2.5);
+        opacity: 0;
+      }
+    }
+
+    label {
+      font-size: 14px;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #555;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Base64変換ツール</h1>
+  <div class="container">
+    <input type="file" id="fileInput" />
+    <textarea id="output" placeholder="ここにBase64が表示されます…" readonly></textarea>
+    <div class="buttons">
+      <label>
+        <input type="checkbox" id="includeDataPrefix" checked />
+        data:付きで出力
+      </label>
+      <button class="ripple-button" onclick="copyBase64()">コピー</button>
+      <button class="ripple-button" onclick="clearOutput()">クリア</button>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const output = document.getElementById('output');
+    const includeDataPrefix = document.getElementById('includeDataPrefix');
+
+    let fullDataURL = '';
+
+    fileInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        fullDataURL = e.target.result; // 例: data:image/png;base64,iVBORw0KGgo...
+        updateOutput();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    includeDataPrefix.addEventListener('change', updateOutput);
+
+    function updateOutput() {
+      if (!fullDataURL) {
+        output.value = '';
+        return;
+      }
+      if (includeDataPrefix.checked) {
+        output.value = fullDataURL;
+      } else {
+        // data:以降のカンマを探して切り出す
+        const base64 = fullDataURL.split(',')[1] || '';
+        output.value = base64;
+      }
+    }
+
+    function copyBase64() {
+      if (!output.value) return alert('コピーするテキストがありません');
+
+      output.select();
+      output.setSelectionRange(0, 99999); // モバイル対応
+      document.execCommand('copy');
+      alert('コピーしました！');
+    }
+
+    function clearOutput() {
+      output.value = '';
+      fileInput.value = '';
+      fullDataURL = '';
+    }
+  </script>
+</body>
+</html>
